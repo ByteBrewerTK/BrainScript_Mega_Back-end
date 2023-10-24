@@ -45,7 +45,7 @@ exports.sendOTP = async (req, res) => {
                 lowerCaseAlphabets : false,
                 specialChars : false
         
-            })
+            });
             result = await OTP.findOne({otp : otp});
         }
         console.log('OTP generated : ', otp);
@@ -124,9 +124,9 @@ exports.signUp = async (req, res) => {
         }
 
         // Fetching recent otp from DB
-        const recentOTP = await OTP.find({email}).sort({createAt : -1}).limit(1);
+        const recentOTP = await OTP.find({ email }).sort({ createdAt: -1 }).limit(1);
 
-        console.log(recentOTP);
+        console.log("Recent OTP : ",recentOTP);
 
         // Validating OTP
         if(recentOTP.length===0){
@@ -136,8 +136,9 @@ exports.signUp = async (req, res) => {
                 message : "OTP not found"
             });
         }else{
-            if(otp !== recentOTP){
+            if(otp !== recentOTP[0].otp){
                 // Invalid OTP
+                // console.log(recentOTP);
                 return res.status(401).json({
                     success : false,
                     message : "Invalid OTP"
@@ -147,6 +148,10 @@ exports.signUp = async (req, res) => {
 
         // Hashing the password
         const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Create the user
+		let approved = "";
+		approved === "Instructor" ? (approved = false) : (approved = true);
 
         // creating null profile for extracting object id of additional_details
         const profile = {
@@ -265,3 +270,75 @@ exports.login = async (req, res) => {
         })
     }
 }
+
+exports.changePassword = async (req, res) => {
+	try {
+		// Get user data from req.user
+		const userDetails = await User.findById(req.user.id);
+
+		// Get old password, new password, and confirm new password from req.body
+		const { old_password, new_password, confirm_new_password } = req.body;
+
+		// Validate old password
+		const isPasswordMatch = await bcrypt.compare(
+			old_password,
+			userDetails.password
+		);
+		if (!isPasswordMatch) {
+			// If old password does not match, return a 401 (Unauthorized) error
+			return res
+				.status(401)
+				.json({ success: false, message: "The password is incorrect" });
+		}
+
+		// Match new password and confirm new password
+		if (new_password !== confirm_new_password) {
+			// If new password and confirm new password do not match, return a 400 (Bad Request) error
+			return res.status(400).json({
+				success: false,
+				message: "The password and confirm password does not match",
+			});
+		}
+
+		// Update password
+		const encryptedPassword = await bcrypt.hash(new_password, 10);
+		const updatedUserDetails = await User.findByIdAndUpdate(
+			req.user.id,
+			{ password: encryptedPassword },
+			{ new: true }
+		);
+
+		// Send notification email
+		try {
+			const emailResponse = await mailSender(
+				updatedUserDetails.email,
+				passwordUpdated(
+					updatedUserDetails.email,
+					`Password updated successfully for ${updatedUserDetails.firstName} ${updatedUserDetails.lastName}`
+				)
+			);
+			console.log("Email sent successfully:", emailResponse.response);
+		} catch (error) {
+			// If there's an error sending the email, log the error and return a 500 (Internal Server Error) error
+			console.error("Error occurred while sending email:", error);
+			return res.status(500).json({
+				success: false,
+				message: "Error occurred while sending email",
+				error: error.message,
+			});
+		}
+
+		// Return success response
+		return res
+			.status(200)
+			.json({ success: true, message: "Password updated successfully" });
+	} catch (error) {
+		// If there's an error updating the password, log the error and return a 500 (Internal Server Error) error
+		console.error("Error occurred while updating password:", error);
+		return res.status(500).json({
+			success: false,
+			message: "Error occurred while updating password",
+			error: error.message,
+		});
+	}
+};

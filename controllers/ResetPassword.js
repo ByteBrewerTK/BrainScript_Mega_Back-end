@@ -86,7 +86,7 @@ exports.resetPassword = async (req, res) =>{
         }
 
         // Checking is the token is valid or not
-        const userDetails = await User.findOne({token});
+        const userDetails = await User.findOne({token:token});
 
         if(!userDetails){
             res.status(401).json({
@@ -108,11 +108,12 @@ exports.resetPassword = async (req, res) =>{
 
         // Update password on DB corresponding to the email
         const updatedUser = await User.findOneAndUpdate({token},
-                                                        {
-                                                            password : hashedPassword,
-                                                            token : null
-                                                        },
-                                                        {new : true});
+            {
+                password : hashedPassword,
+                token : null
+            },
+            {new : true}
+        );
 
         return res.status(200).json({
             success : true,

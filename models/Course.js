@@ -13,16 +13,20 @@ const courseSchema = new mongoose.Schema({
         required : true
     },
     instructor : {
-        type : String,
-        required: true
+        type : mongoose.Schema.Types.ObjectId,
+        required: true,
+        ref : "User"
+
     },
     what_will_you_learn : {
         type : String
     },
-    course_content : {
-        type : mongoose.Schema.Types.ObjectId,
-        ref : "Section"
-    },
+    course_content : [
+        {
+            type : mongoose.Schema.Types.ObjectId,
+            ref : "Section"
+        }
+    ],
     rating_and_reviews : [
         {
             type : mongoose.Schema.Types.ObjectId,
@@ -38,14 +42,27 @@ const courseSchema = new mongoose.Schema({
         type : String,
     },
     tags : {
-        type : mongoose.Schema.Types.ObjectId,
-        ref : "Tags"
+        type : [String],
+        required : true
     },
-    students_enrolled : {
+    category : {
         type : mongoose.Schema.Types.ObjectId,
-        required : true,
-        ref : "User"
-    }
+        ref : "Category"
+    },
+    students_enrolled : [
+        {
+            type : mongoose.Schema.Types.ObjectId,
+            required : true,
+            ref : "User"
+        }
+    ],
+    instructions: {
+		type: [String],
+	},
+    status: {
+		type: String,
+		enum: ["Draft", "Published"],
+	}
 
 });
 

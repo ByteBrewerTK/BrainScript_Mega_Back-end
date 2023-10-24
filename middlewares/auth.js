@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 // Authorization verification
-const auth = async (req, res, next) => {
+exports.auth = async (req, res, next) => {
 
     try{
         const token = req.cookies.token
@@ -22,8 +22,8 @@ const auth = async (req, res, next) => {
         try{
 
             const decode = await jwt.verify(token, process.env.JWT_SECRET);
+            
             console.log(decode);
-
             req.user = decode;
 
         }catch(error){
@@ -92,7 +92,7 @@ exports.isInstructor = async (req, res, next) => {
 exports.isAdmin = async (req, res, next) => {
     try{
         if(req.user.account_type !== "Admin"){
-            // If account type is not student
+            // If account type is not Admin
 
             return res.status(401).json({
                 success : false, 

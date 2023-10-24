@@ -11,7 +11,7 @@ const subSectionSchema = new mongoose.Schema({
     description : {
         type : String
     },
-    video_url : {
+    video : {
         type : String
     }
 
